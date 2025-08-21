@@ -20,7 +20,7 @@ export default defineConfig((config) => {
       target: "esnext",
     },
     server: {
-      allowedHosts: ["cook.sovran.money"],
+      allowedHosts: ["build.sovran.money"],
     },
     plugins: [
       nodePolyfills({
