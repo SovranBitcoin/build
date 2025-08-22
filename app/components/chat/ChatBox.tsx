@@ -187,9 +187,9 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
       )}
       {props.provider?.name === "Routstr" && (
         <div className="text-xs text-bolt-elements-textTertiary mb-2">
-          This is an experimental project. This is a proxy for the Routstr API.
-          We just forward API requests to Routstr. Also, not all models seem to
-          work consistently, I have found success with `openai/gpt-4o-mini`.
+          This is an experimental project, we don't guarentee that all models
+          will work and the quality will vary widely depending on the models
+          capabilities. I have found some success with `openai/gpt-4o-mini`.
         </div>
       )}
       <div className="text-xs text-bolt-elements-textTertiary mb-2">

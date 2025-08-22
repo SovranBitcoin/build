@@ -418,7 +418,7 @@ export const RoutstrModelDialog = memo(
                           </div>
                           <div className="flex flex-col items-end">
                             <span className="text-bolt-elements-textTertiary">
-                              Min Balance
+                              Max cost per prompt
                             </span>
                             <span className="text-bolt-elements-textSecondary">
                               {minCostSats.toFixed(0)} sats
