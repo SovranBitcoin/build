@@ -187,23 +187,17 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
       )}
       {props.provider?.name === "Routstr" && (
         <div className="text-xs text-bolt-elements-textTertiary mb-2">
-          This is an experimental project, we don't guarentee that all models
+          This is an *experimental* project, we don't guarentee that all models
           will work and the quality will vary widely depending on the models
-          capabilities. I have found some success with{" "}
+          capabilities. For best results I have found picking a template below,
+          then making a prompt with{" "}
           <button
             onClick={() => props.setModel?.("openai/gpt-4o-mini")}
             className="font-mono px-1 py-0.5 bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor rounded text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-4 transition-colors cursor-pointer"
           >
-            openai/gpt-4o-mini
+            openai/gpt-4.1-nano
           </button>
-          or{" "}
-          <button
-            onClick={() => props.setModel?.("openai/gpt-oss-120b")}
-            className="font-mono px-1 py-0.5 bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor rounded text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-4 transition-colors cursor-pointer"
-          >
-            openai/gpt-oss-120b
-          </button>
-          . Some of the other models can be very hit or miss.
+          . Some of the models can be very hit or miss.
         </div>
       )}
       <div className="text-xs text-bolt-elements-textTertiary mb-2">

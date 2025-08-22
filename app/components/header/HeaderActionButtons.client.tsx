@@ -6,6 +6,7 @@ import { ExportChatButton } from "~/components/chat/chatExportAndImport/ExportCh
 import { useChatHistory } from "~/lib/persistence";
 import { DeployButton } from "~/components/deploy/DeployButton";
 import { useBalance } from "~/lib/hooks/useBalance";
+import { refreshBalance } from "~/lib/stores/balance";
 import { WalletDialog } from "~/components/chat/WalletDialog";
 
 interface HeaderActionButtonsProps {
@@ -18,7 +19,7 @@ export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
   const activePreview = previews[activePreviewIndex];
   const isStreaming = useStore(streamingState);
   const { exportChat } = useChatHistory();
-  const { balanceSats, loading, refresh } = useBalance();
+  const { balanceSats, loading } = useBalance();
 
   const [walletOpen, setWalletOpen] = useState(false);
 
@@ -39,7 +40,7 @@ export function HeaderActionButtons({ chatStarted }: HeaderActionButtonsProps) {
           setWalletOpen(true);
 
           try {
-            await refresh();
+            await refreshBalance();
           } catch {}
         }}
         title="Wallet"

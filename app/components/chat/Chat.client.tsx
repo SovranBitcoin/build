@@ -36,6 +36,7 @@ import type { ElementInfo } from "~/components/workbench/Inspector";
 import type { TextUIPart, FileUIPart, Attachment } from "@ai-sdk/ui-utils";
 import { useMCPStore } from "~/lib/stores/mcp";
 import type { LlmErrorAlertType } from "~/types/actions";
+import { refreshBalance } from "~/lib/stores/balance";
 
 const toastAnimation = cssTransition({
   enter: "animated fadeInRight",
@@ -248,6 +249,19 @@ export const ChatImpl = memo(
         }
 
         logger.debug("Finished streaming");
+
+        // Refresh balance when prompt finishes processing
+        console.log("✅ Message completed, refreshing balance...");
+
+        // Add a small delay to allow Routstr to update the balance
+        setTimeout(() => {
+          refreshBalance().catch((error) => {
+            console.warn(
+              "Failed to refresh balance after message completion:",
+              error,
+            );
+          });
+        }, 1000); // 1 second delay
       },
       initialMessages,
       initialInput: Cookies.get(PROMPT_COOKIE_KEY) || "",
@@ -496,6 +510,18 @@ export const ChatImpl = memo(
       if (isLoading) {
         abort();
         return;
+      }
+
+      // Refresh balance when user sends a prompt
+      console.log("📤 Sending message, refreshing balance...");
+
+      try {
+        await refreshBalance();
+      } catch (error) {
+        console.warn(
+          "Failed to refresh balance before sending message:",
+          error,
+        );
       }
 
       let finalMessageContent = messageContent;

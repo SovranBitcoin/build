@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useBalance, topupWalletRequest } from "~/lib/hooks/useBalance";
+import { refreshBalance } from "~/lib/stores/balance";
 import {
   Dialog,
   DialogDescription,
@@ -16,7 +17,7 @@ interface WalletDialogProps {
 }
 
 export function WalletDialog({ isOpen, onClose }: WalletDialogProps) {
-  const { balanceSats, loading, error, userId, refresh } = useBalance();
+  const { balanceSats, loading, error, userId } = useBalance();
 
   const [topupToken, setTopupToken] = useState("");
   const [topupLoading, setTopupLoading] = useState(false);
@@ -43,9 +44,9 @@ export function WalletDialog({ isOpen, onClose }: WalletDialogProps) {
   // Refresh balance when dialog opens
   useEffect(() => {
     if (isOpen) {
-      refresh();
+      refreshBalance();
     }
-  }, [isOpen, refresh]);
+  }, [isOpen]);
 
   const handleTopup = async () => {
     if (!topupToken.trim() || topupLoading) {
@@ -91,8 +92,8 @@ export function WalletDialog({ isOpen, onClose }: WalletDialogProps) {
       setTopupSuccess(true);
       setTopupToken("");
 
-      // Refresh balance after successful operation
-      await refresh();
+      // Refresh balance after successful operation - this will update all components
+      await refreshBalance();
     } catch (err: any) {
       setTopupError(
         err?.message ||

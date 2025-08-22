@@ -263,7 +263,7 @@ export default class RoutstrProvider extends BaseProvider {
               JSON.stringify(data, null, 2),
             );
 
-            // Remove the 'cost' property that causes Zod validation to fail
+            // Check if this is a cost-only response that should be ignored
             if (data && typeof data === "object" && "cost" in data) {
               const { cost, ...cleanData } = data;
 
@@ -277,39 +277,40 @@ export default class RoutstrProvider extends BaseProvider {
                 JSON.stringify(cleanData, null, 2),
               );
 
-              // Ensure we have the required properties for OpenAI compatibility
+              // If this is a cost-only response (no other meaningful data), ignore it completely
               if (Object.keys(cleanData).length === 0) {
-                console.error(
-                  "Routstr response became empty after removing cost property - this appears to be a cost-only response",
-                );
-                console.error(
-                  "Original response was:",
-                  JSON.stringify(data, null, 2),
+                console.log(
+                  "Routstr cost-only response detected - this appears to be a separate cost notification, not a chat completion response",
                 );
 
                 /*
-                 * This appears to be a cost-only response, which means Routstr might send
-                 * cost information separately from the actual completion response
-                 * We should not process these as they're not meant for the AI SDK
-                 * Return an error response instead
+                 * This is a cost-only response from Routstr, not a chat completion
+                 * Return a proper OpenAI-compatible error response
                  */
+                console.log(
+                  "Routstr cost-only response detected - returning error response",
+                );
+
                 const errorResponse = {
                   error: {
                     message:
-                      "Received cost-only response from Routstr - this may be a separate cost notification",
-                    type: "routstr_cost_only_response",
-                    code: "cost_only",
+                      "Cost-only response from Routstr - not a chat completion",
+                    type: "invalid_request_error",
+                    code: "cost_only_response",
                   },
                 };
 
                 return new Response(JSON.stringify(errorResponse), {
-                  status: response.status,
-                  statusText: response.statusText,
-                  headers: response.headers,
+                  status: 400,
+                  statusText: "Bad Request - Cost Only Response",
+                  headers: {
+                    ...Object.fromEntries(response.headers.entries()),
+                    "content-type": "application/json",
+                  },
                 });
               }
 
-              // Create a new response with the cleaned data
+              // Create a new response with the cleaned data (removing cost property)
               return new Response(JSON.stringify(cleanData), {
                 status: response.status,
                 statusText: response.statusText,

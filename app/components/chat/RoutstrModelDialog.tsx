@@ -9,6 +9,7 @@ import {
 import { WalletDialog } from "~/components/chat/WalletDialog";
 import { chatStore } from "~/lib/stores/chat";
 import { useBalance } from "~/lib/hooks/useBalance";
+import { refreshBalance } from "~/lib/stores/balance";
 import { classNames } from "~/utils/classNames";
 import type { ModelInfo } from "~/lib/modules/llm/types";
 
@@ -90,7 +91,7 @@ export const RoutstrModelDialog = memo(
       return fixed.replace(/\.0+$/, "").replace(/\.(?=\D|$)/, "");
     };
 
-    const { balanceSats, refresh: refreshBalance } = useBalance();
+    const { balanceSats } = useBalance();
 
     type SortMode = "cheapest" | "expensive";
 
@@ -194,7 +195,7 @@ export const RoutstrModelDialog = memo(
           void refreshBalance();
         } catch {}
       }
-    }, [isOpen, refreshBalance]);
+    }, [isOpen]);
 
     return (
       <DialogRoot open={isOpen} onOpenChange={onClose}>

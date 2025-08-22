@@ -1,81 +1,27 @@
-import { useCallback, useEffect, useState } from "react";
-import { getApiKeysFromCookies } from "~/components/chat/APIKeyManager";
+import { useStore } from "@nanostores/react";
+import { useEffect } from "react";
+import {
+  balanceStore,
+  refreshBalance,
+  topupWalletRequest as topupWalletRequestFromStore,
+} from "~/lib/stores/balance";
 
 export function useBalance() {
-  const [balanceSats, setBalanceSats] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | undefined>(undefined);
+  const balance = useStore(balanceStore);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(undefined);
-
-    try {
-      const apiKeys = getApiKeysFromCookies();
-      const routstrApiKey = apiKeys.Routstr;
-
-      if (!routstrApiKey) {
-        throw new Error(
-          "Routstr API key not found. Please set your API key in settings.",
-        );
-      }
-
-      const res = await fetch("https://api.routstr.com/v1/wallet/", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${routstrApiKey}`,
-        },
-      });
-
-      const data = (await res.json()) as { balance?: number };
-
-      setBalanceSats(Number(data?.balance ?? 0));
-    } catch (err: any) {
-      setError(err?.message || "Failed to fetch balance");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Auto-refresh balance on first mount
   useEffect(() => {
-    refresh();
+    refreshBalance();
   }, []);
 
   return {
-    balanceSats: balanceSats / 1000,
-    loading,
-    error,
-    refresh,
+    balanceSats: balance.balanceSats / 1000, // Removed division by 1000 to test
+    loading: balance.loading,
+    error: balance.error,
+    refresh: refreshBalance,
     userId: null,
   };
 }
 
-// Top up wallet with Cashu token
-export const topupWalletRequest = async (cashuToken: string) => {
-  const apiKeys = getApiKeysFromCookies();
-  const routstrApiKey = apiKeys.Routstr;
-
-  if (!routstrApiKey) {
-    throw new Error(
-      "Routstr API key not found. Please set your API key in settings.",
-    );
-  }
-
-  const response = await fetch(
-    "https://api.routstr.com/v1/wallet/topup?cashu_token=" + cashuToken,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${routstrApiKey}`,
-      },
-    },
-  );
-
-  if (!response.ok) {
-    const errorData = (await response.json().catch(() => ({}))) as any;
-    throw new Error(errorData.error || `Topup failed: ${response.status}`);
-  }
-
-  return response.json();
-};
+// Re-export topupWalletRequest for backward compatibility
+export const topupWalletRequest = topupWalletRequestFromStore;
