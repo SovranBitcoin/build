@@ -196,7 +196,14 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           >
             openai/gpt-4o-mini
           </button>
-          .
+          or{" "}
+          <button
+            onClick={() => props.setModel?.("openai/gpt-oss-120b")}
+            className="font-mono px-1 py-0.5 bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor rounded text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-4 transition-colors cursor-pointer"
+          >
+            openai/gpt-oss-120b
+          </button>
+          . Some of the other models can be very hit or miss.
         </div>
       )}
       <div className="text-xs text-bolt-elements-textTertiary mb-2">
