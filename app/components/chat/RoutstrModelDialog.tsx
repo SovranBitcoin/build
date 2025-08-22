@@ -126,8 +126,8 @@ export const RoutstrModelDialog = memo(
             typeof minCostSats === "number" ? balanceSats >= minCostSats : true;
           const isContextLargeEnough =
             typeof model.context_length === "number"
-              ? model.context_length >= 200_000
-              : true;
+              ? model.context_length >= 128_000
+              : false;
 
           return isAffordable && isContextLargeEnough;
         });
@@ -165,8 +165,8 @@ export const RoutstrModelDialog = memo(
                 : true;
             const isContextLargeEnough =
               typeof model.context_length === "number"
-                ? model.context_length >= 200_000
-                : true;
+                ? model.context_length >= 128_000
+                : false;
 
             return isAffordable && isContextLargeEnough;
           }).length;
@@ -283,173 +283,203 @@ export const RoutstrModelDialog = memo(
                     No models found
                   </div>
                 )}
-                {filteredModels
-                  .sort((a, b) => {
-                    const aIn =
-                      typeof a.sats_pricing?.prompt === "number"
-                        ? a.sats_pricing!.prompt!
-                        : Number.MAX_SAFE_INTEGER;
-                    const aOut =
-                      typeof a.sats_pricing?.completion === "number"
-                        ? a.sats_pricing!.completion!
-                        : Number.MAX_SAFE_INTEGER;
-                    const bIn =
-                      typeof b.sats_pricing?.prompt === "number"
-                        ? b.sats_pricing!.prompt!
-                        : Number.MAX_SAFE_INTEGER;
-                    const bOut =
-                      typeof b.sats_pricing?.completion === "number"
-                        ? b.sats_pricing!.completion!
-                        : Number.MAX_SAFE_INTEGER;
-                    const aPrice = (aIn || 0) + (aOut || 0);
-                    const bPrice = (bIn || 0) + (bOut || 0);
-
-                    return sortMode === "cheapest"
-                      ? aPrice - bPrice
-                      : bPrice - aPrice;
-                  })
-                  .map((model) => {
-                    const inSats = model.sats_pricing?.prompt;
-                    const outSats = model.sats_pricing?.completion;
-                    const minCostSats = model.sats_pricing?.max_cost
-                      ? model.sats_pricing.max_cost
-                      : 0;
-
-                    const isAffordable =
-                      typeof minCostSats === "number"
-                        ? balanceSats >= minCostSats
-                        : true;
-
-                    const isContextLargeEnough =
-                      typeof model.context_length === "number"
-                        ? model.context_length >= 200_000
-                        : true;
-
-                    const isDisabled = !isContextLargeEnough || !isAffordable;
-
-                    // Generate tooltip content for disabled models
-                    const getTooltipContent = () => {
-                      const reasons = [];
-
-                      if (!isAffordable) {
-                        reasons.push("Insufficient funds");
-                      }
-
-                      if (!isContextLargeEnough) {
-                        reasons.push(
-                          "Models with less than 200k tokens are disabled",
-                        );
-                      }
-
-                      return reasons.join(" • ");
-                    };
-
-                    const modelRow = (
-                      <div
-                        key={model.id}
-                        className={classNames(
-                          "flex items-center px-4 py-2",
-                          !isDisabled
-                            ? "cursor-pointer hover:bg-bolt-elements-item-backgroundActive"
-                            : "opacity-50 cursor-not-allowed",
-                        )}
-                        onClick={() => {
-                          if (isDisabled) {
-                            return;
-                          }
-
-                          onModelSelect(model.id);
-                          chatStore.setKey("selectedModelId", model.id);
-                          chatStore.setKey(
-                            "selectedMaxCompletionTokens",
-                            model.top_provider?.max_completion_tokens ??
-                              undefined,
-                          );
-                          chatStore.setKey(
-                            "selectedContextLength",
-                            model.top_provider?.context_length ??
-                              model.context_length ??
-                              undefined,
-                          );
-                          onClose();
-                        }}
-                      >
-                        <div className="flex-1 min-w-0 pr-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <span className="text-sm text-bolt-elements-textPrimary truncate">
-                              {model.name || model.id}
-                            </span>
-                          </div>
-                          <div className="mt-1 flex items-center gap-2">
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor font-mono text-bolt-elements-textSecondary truncate max-w-[60%]">
-                              {model.id}
-                            </span>
-                          </div>
+                {filteredModels.length > 0 && (
+                  <>
+                    {/* Table Header */}
+                    <div
+                      key={"header"}
+                      className={classNames(
+                        "sticky top-0 z-10 flex items-center px-4 py-3 border-b bg-bolt-elements-background-depth-2 border-bolt-elements-borderColor",
+                      )}
+                    >
+                      <div className="flex-1 pr-3 min-w-0">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-sm font-medium text-bolt-elements-textPrimary whitespace-nowrap">
+                            Model
+                          </span>
                         </div>
-                        <div className="w-6 flex-shrink-0 flex items-center justify-center">
-                          {selectedModel === model.id && (
-                            <span className="i-ph:check-circle text-bolt-elements-item-contentAccent text-base" />
-                          )}
-                        </div>
-                        <div className="grid grid-cols-5 gap-3 text-[11px] font-mono whitespace-nowrap text-right min-w-[340px]">
-                          <div className="flex flex-col items-end">
-                            <span className="text-bolt-elements-textTertiary">
+                      </div>
+                      <div className="w-6 flex-shrink-0 flex items-center justify-center"></div>
+                      <div className="flex-shrink-0">
+                        <div className="grid grid-cols-4 gap-3 text-[11px] font-mono whitespace-nowrap text-right min-w-[300px]">
+                          <div className="flex items-center justify-end">
+                            <span className="text-bolt-elements-textSecondary font-medium">
                               Context
                             </span>
-                            <span className="text-bolt-elements-textSecondary">
-                              {formatInteger(model.context_length)}
+                          </div>
+                          <div className="flex items-center justify-end">
+                            <span className="text-bolt-elements-textSecondary font-medium">
+                              Prompt/Completion
                             </span>
                           </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-bolt-elements-textTertiary">
-                              Input
-                            </span>
-                            <span className="text-bolt-elements-textSecondary">
-                              {formatDecimal(inSats)}
+                          <div className="flex items-center justify-end">
+                            <span className="text-bolt-elements-textSecondary font-medium">
+                              Max Cost
                             </span>
                           </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-bolt-elements-textTertiary">
-                              Output
-                            </span>
-                            <span className="text-bolt-elements-textSecondary">
-                              {formatDecimal(outSats)}
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-bolt-elements-textTertiary">
-                              Max cost per prompt
-                            </span>
-                            <span className="text-bolt-elements-textSecondary">
-                              {minCostSats.toFixed(0)} sats
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-end">
-                            <span className="text-bolt-elements-textTertiary">
-                              Max Completion
-                            </span>
-                            <span className="text-bolt-elements-textSecondary">
-                              {formatInteger(
-                                model.top_provider?.max_completion_tokens,
-                              )}
+                          <div className="flex items-center justify-end">
+                            <span className="text-bolt-elements-textSecondary font-medium">
+                              Max Tokens
                             </span>
                           </div>
                         </div>
                       </div>
-                    );
+                    </div>
 
-                    // Return tooltip-wrapped row for disabled models, plain row for enabled ones
-                    return isDisabled ? (
-                      <CursorTooltip
-                        key={model.id}
-                        content={getTooltipContent()}
-                      >
-                        {modelRow}
-                      </CursorTooltip>
-                    ) : (
-                      modelRow
-                    );
-                  })}
+                    {/* Table Body */}
+                    {filteredModels
+                      .sort((a, b) => {
+                        const aIn =
+                          typeof a.sats_pricing?.prompt === "number"
+                            ? a.sats_pricing!.prompt!
+                            : Number.MAX_SAFE_INTEGER;
+                        const aOut =
+                          typeof a.sats_pricing?.completion === "number"
+                            ? a.sats_pricing!.completion!
+                            : Number.MAX_SAFE_INTEGER;
+                        const bIn =
+                          typeof b.sats_pricing?.prompt === "number"
+                            ? b.sats_pricing!.prompt!
+                            : Number.MAX_SAFE_INTEGER;
+                        const bOut =
+                          typeof b.sats_pricing?.completion === "number"
+                            ? b.sats_pricing!.completion!
+                            : Number.MAX_SAFE_INTEGER;
+                        const aPrice = (aIn || 0) + (aOut || 0);
+                        const bPrice = (bIn || 0) + (bOut || 0);
+
+                        return sortMode === "cheapest"
+                          ? aPrice - bPrice
+                          : bPrice - aPrice;
+                      })
+                      .map((model) => {
+                        const inSats = model.sats_pricing?.prompt;
+                        const outSats = model.sats_pricing?.completion;
+                        const minCostSats = model.sats_pricing?.max_cost
+                          ? model.sats_pricing.max_cost
+                          : 0;
+
+                        const isAffordable =
+                          typeof minCostSats === "number"
+                            ? balanceSats >= minCostSats
+                            : true;
+
+                        const isContextLargeEnough =
+                          typeof model.context_length === "number"
+                            ? model.context_length >= 128_000
+                            : false;
+
+                        const isDisabled =
+                          !isContextLargeEnough || !isAffordable;
+
+                        // Generate tooltip content for disabled models
+                        const getTooltipContent = () => {
+                          const reasons = [];
+
+                          if (!isAffordable) {
+                            reasons.push("Insufficient funds");
+                          }
+
+                          if (!isContextLargeEnough) {
+                            reasons.push(
+                              "Models with less than 128k tokens are disabled",
+                            );
+                          }
+
+                          return reasons.join(" • ");
+                        };
+
+                        const modelRow = (
+                          <div
+                            key={model.id}
+                            className={classNames(
+                              "flex items-center px-4 py-2 border-bolt-elements-borderColor last:border-b-0",
+                              !isDisabled
+                                ? "cursor-pointer hover:bg-bolt-elements-item-backgroundActive"
+                                : "opacity-50 cursor-not-allowed",
+                            )}
+                            onClick={() => {
+                              if (isDisabled) {
+                                return;
+                              }
+
+                              onModelSelect(model.id);
+                              chatStore.setKey("selectedModelId", model.id);
+                              chatStore.setKey(
+                                "selectedMaxCompletionTokens",
+                                model.top_provider?.max_completion_tokens ??
+                                  undefined,
+                              );
+                              chatStore.setKey(
+                                "selectedContextLength",
+                                model.top_provider?.context_length ??
+                                  model.context_length ??
+                                  undefined,
+                              );
+                              onClose();
+                            }}
+                          >
+                            <div className="flex-1 pr-3 min-w-0">
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-sm text-bolt-elements-textPrimary whitespace-nowrap">
+                                  {model.name || model.id}
+                                </span>
+                              </div>
+                              <div className="mt-1 flex items-center gap-2">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor font-mono text-bolt-elements-textSecondary whitespace-nowrap">
+                                  {model.id}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="w-6 flex-shrink-0 flex items-center justify-center">
+                              {selectedModel === model.id && (
+                                <span className="i-ph:check-circle text-bolt-elements-item-contentAccent text-base" />
+                              )}
+                            </div>
+                            <div className="flex-shrink-0">
+                              <div className="grid grid-cols-4 gap-3 text-[11px] font-mono whitespace-nowrap text-right min-w-[300px]">
+                                <div className="flex items-center justify-end">
+                                  <span className="text-bolt-elements-textSecondary">
+                                    {formatInteger(model.context_length)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-end">
+                                  <span className="text-bolt-elements-textSecondary">
+                                    {formatDecimal(inSats)}/
+                                    {formatDecimal(outSats)}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-end">
+                                  <span className="text-bolt-elements-textSecondary">
+                                    {minCostSats.toFixed(0)} sats
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-end">
+                                  <span className="text-bolt-elements-textSecondary">
+                                    {formatInteger(
+                                      model.top_provider?.max_completion_tokens,
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+
+                        // Return tooltip-wrapped row for disabled models, plain row for enabled ones
+                        return isDisabled ? (
+                          <CursorTooltip
+                            key={model.id}
+                            content={getTooltipContent()}
+                          >
+                            {modelRow}
+                          </CursorTooltip>
+                        ) : (
+                          modelRow
+                        );
+                      })}
+                  </>
+                )}
               </div>
 
               <div className="flex justify-between items-center gap-2 mt-4">
