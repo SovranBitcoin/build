@@ -13,6 +13,26 @@ import { refreshBalance } from "~/lib/stores/balance";
 import { classNames } from "~/utils/classNames";
 import type { ModelInfo } from "~/lib/modules/llm/types";
 
+// Whitelist of allowed models - add more models here as needed
+const ALLOWED_MODELS = [
+  "openai/gpt-5",
+
+  /*
+   * "openai/gpt-4o",
+   * "openai/gpt-4o-mini",
+   * "openai/gpt-4-turbo",
+   * "openai/gpt-4",
+   * "openai/gpt-3.5-turbo",
+   */
+
+  /*
+   * Add more models here as needed, e.g.:
+   * "openai/gpt-5", // when available
+   * "anthropic/claude-3.5-sonnet",
+   * "google/gemini-pro",
+   */
+];
+
 interface RoutstrModelDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -97,7 +117,6 @@ export const RoutstrModelDialog = memo(
 
     const [sortMode, setSortMode] = useState<SortMode>("expensive");
     const [providerFilter, setProviderFilter] = useState<string>("all");
-    const [hideDisabled, setHideDisabled] = useState<boolean>(true);
     const [walletDialogOpen, setWalletDialogOpen] = useState<boolean>(false);
 
     // Extract Routstr models with full data
@@ -110,33 +129,20 @@ export const RoutstrModelDialog = memo(
     const filteredModels = useMemo(() => {
       return routstrModels
         .slice()
+        .filter((m) => {
+          // Only show whitelisted models
+          return ALLOWED_MODELS.includes(m.id || "");
+        })
         .filter(
           (m) =>
             providerFilter === "all" ||
             (m.id || "").split("/")[0] === providerFilter,
-        )
-        .filter((model) => {
-          if (!hideDisabled) {
-            return true;
-          }
-
-          const minCostSats = model.sats_pricing?.max_cost
-            ? model.sats_pricing.max_cost
-            : 0;
-          const isAffordable =
-            typeof minCostSats === "number" ? balanceSats >= minCostSats : true;
-          const isContextLargeEnough =
-            typeof model.context_length === "number"
-              ? model.context_length >= 128_000
-              : false;
-
-          return isAffordable && isContextLargeEnough;
-        });
-    }, [routstrModels, providerFilter, hideDisabled, balanceSats]);
+        );
+    }, [routstrModels, providerFilter]);
 
     const providerList = useMemo(() => {
-      // Get all providers from routstrModels to always show all provider options
-      const allPrefixes = routstrModels
+      // Get all providers from filtered models
+      const allPrefixes = filteredModels
         .map((m) => (m.id || "").split("/")[0])
         .filter((p): p is string => Boolean(p));
 
@@ -146,30 +152,8 @@ export const RoutstrModelDialog = memo(
       // Count how many filtered models each provider has
       const providerCounts = uniqueProviders.reduce(
         (acc, provider) => {
-          const count = routstrModels.filter((model) => {
-            // Check if model belongs to this provider
-            if ((model.id || "").split("/")[0] !== provider) {
-              return false;
-            }
-
-            // Apply the same filtering logic as filteredModels (excluding provider filter)
-            if (!hideDisabled) {
-              return true;
-            }
-
-            const minCostSats = model.sats_pricing?.max_cost
-              ? model.sats_pricing.max_cost
-              : 0;
-            const isAffordable =
-              typeof minCostSats === "number"
-                ? balanceSats >= minCostSats
-                : true;
-            const isContextLargeEnough =
-              typeof model.context_length === "number"
-                ? model.context_length >= 128_000
-                : false;
-
-            return isAffordable && isContextLargeEnough;
+          const count = filteredModels.filter((model) => {
+            return (model.id || "").split("/")[0] === provider;
           }).length;
 
           acc[provider] = count;
@@ -179,14 +163,15 @@ export const RoutstrModelDialog = memo(
         {} as Record<string, number>,
       );
 
-      // Return providers sorted by count (descending)
+      // Return providers sorted by count (descending), filtering out those with 0 models
       return uniqueProviders
         .map((provider) => ({
           name: provider,
           count: providerCounts[provider],
         }))
+        .filter((provider) => provider.count > 0) // Hide providers with 0 models
         .sort((a, b) => b.count - a.count);
-    }, [routstrModels, hideDisabled, balanceSats]);
+    }, [filteredModels]);
 
     // refresh wallet balance when opening menu
     useEffect(() => {
@@ -208,18 +193,6 @@ export const RoutstrModelDialog = memo(
                   Select Model
                 </DialogTitle>
                 <div className="flex items-center gap-2 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => setHideDisabled(!hideDisabled)}
-                    className={classNames(
-                      "px-2 py-1 rounded border text-xs transition-theme",
-                      hideDisabled
-                        ? "bg-bolt-elements-item-backgroundAccent text-bolt-elements-item-contentAccent border-bolt-elements-item-backgroundAccent"
-                        : "bg-bolt-elements-background-depth-3 text-bolt-elements-textPrimary border-bolt-elements-borderColor",
-                    )}
-                  >
-                    {hideDisabled ? "Show All" : "Hide Disabled"}
-                  </button>
                   <button
                     type="button"
                     onClick={() => setSortMode("cheapest")}
@@ -365,13 +338,7 @@ export const RoutstrModelDialog = memo(
                             ? balanceSats >= minCostSats
                             : true;
 
-                        const isContextLargeEnough =
-                          typeof model.context_length === "number"
-                            ? model.context_length >= 128_000
-                            : false;
-
-                        const isDisabled =
-                          !isContextLargeEnough || !isAffordable;
+                        const isDisabled = !isAffordable;
 
                         // Generate tooltip content for disabled models
                         const getTooltipContent = () => {
@@ -379,12 +346,6 @@ export const RoutstrModelDialog = memo(
 
                           if (!isAffordable) {
                             reasons.push("Insufficient funds");
-                          }
-
-                          if (!isContextLargeEnough) {
-                            reasons.push(
-                              "Models with less than 128k tokens are disabled",
-                            );
                           }
 
                           return reasons.join(" • ");

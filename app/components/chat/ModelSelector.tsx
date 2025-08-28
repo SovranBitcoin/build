@@ -104,9 +104,30 @@ export const ModelSelector = ({
       );
     });
 
-  const filteredProviders = providerList.filter((p) =>
-    p.name.toLowerCase().includes(providerSearchQuery.toLowerCase()),
-  );
+  const filteredProviders = providerList.filter((p) => {
+    // First apply search filter
+    if (!p.name.toLowerCase().includes(providerSearchQuery.toLowerCase())) {
+      return false;
+    }
+
+    // Count available models for this provider
+    const availableModels = modelList.filter((model) => {
+      // Check if model belongs to this provider
+      if (model.provider !== p.name || !model.name) {
+        return false;
+      }
+
+      // Apply the same filtering logic as filteredModels
+      if (showFreeModelsOnly && !isModelLikelyFree(model, p.name)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Hide providers with 0 available models
+    return availableModels.length > 0;
+  });
 
   // Reset free models filter when provider changes
   useEffect(() => {

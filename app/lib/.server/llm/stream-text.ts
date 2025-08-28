@@ -229,7 +229,8 @@ export async function streamText(props: {
       providerSettings,
     }),
     system: chatMode === "build" ? systemPrompt : discussPrompt(),
-    maxTokens: dynamicMaxTokens,
+
+    // maxTokens: dynamicMaxTokens,
     messages: convertToCoreMessages(processedMessages as any),
     ...options,
   });
