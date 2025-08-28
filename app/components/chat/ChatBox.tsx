@@ -192,10 +192,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           capabilities. For best results I have found picking a template below,
           then making a prompt with{" "}
           <button
-            onClick={() => props.setModel?.("openai/gpt-4.1-nano")}
+            onClick={() => props.setModel?.("openai/gpt-5")}
             className="font-mono px-1 py-0.5 bg-bolt-elements-background-depth-3 border border-bolt-elements-borderColor rounded text-bolt-elements-textPrimary hover:bg-bolt-elements-background-depth-4 transition-colors cursor-pointer"
           >
-            openai/gpt-4.1-nano
+            openai/gpt-5
           </button>
           . Some of the models can be very hit or miss.
         </div>
