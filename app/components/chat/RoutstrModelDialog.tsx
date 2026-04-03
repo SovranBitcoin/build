@@ -16,6 +16,8 @@ import type { ModelInfo } from "~/lib/modules/llm/types";
 // Whitelist of allowed models - add more models here as needed
 const ALLOWED_MODELS = [
   "openai/gpt-5",
+  "openai/gpt-oss-120b",
+  "anthropic/claude-3.7-sonnet",
 
   /*
    * "openai/gpt-4o",
